@@ -41,12 +41,12 @@ async function sumAllDebtPayments(userId: string) {
 export async function getCurrentBalance() {
   const sessionUser = await requireUser();
 
-  const user = await prisma.user.findUniqueOrThrow({
+  const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     select: { openingBalance: true },
   });
 
-  const openingBalance = toNumber(user.openingBalance);
+  const openingBalance = toNumber(user?.openingBalance ?? 0);
 
   const [totalIncome, totalExpenses, totalSavings, totalDebtPaid] =
     await Promise.all([

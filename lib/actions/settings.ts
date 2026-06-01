@@ -7,22 +7,22 @@ import { revalidatePath } from "next/cache";
 
 export async function getUserCurrency(): Promise<CurrencyCode> {
   const sessionUser = await requireUser();
-  const user = await prisma.user.findUniqueOrThrow({
+  const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     select: { currency: true },
   });
-  return user.currency;
+  return user?.currency ?? "USD";
 }
 
 export async function getSettings() {
   const sessionUser = await requireUser();
-  const user = await prisma.user.findUniqueOrThrow({
+  const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     select: { currency: true, email: true },
   });
   return {
-    currency: user.currency,
-    email: user.email,
+    currency: user?.currency ?? "USD",
+    email: user?.email ?? sessionUser.email,
   };
 }
 

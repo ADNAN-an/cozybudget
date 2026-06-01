@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { useCurrency } from "@/components/providers/currency-provider";
+import { useIsMobile } from "@/hooks/use-is-mobile";
 import {
   AreaChart,
   Area,
@@ -28,24 +30,32 @@ export function IncomeExpenseChart({
   summary: { current: number; delta30Days: number };
 }) {
   const { formatCurrency } = useCurrency();
+  const isMobile = useIsMobile();
+
+  const displayData = useMemo(() => {
+    if (!isMobile || data.length <= 8) return data;
+    const step = Math.ceil(data.length / 8);
+    return data.filter((_, index) => index % step === 0 || index === data.length - 1);
+  }, [data, isMobile]);
+
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Today
             </p>
             <CardTitle
               className={cn(
-                "mt-1 text-3xl sm:text-4xl",
+                "mt-1 text-2xl leading-tight sm:text-4xl",
                 summary.current < 0 && "text-destructive"
               )}
             >
               {formatCurrency(summary.current)}
             </CardTitle>
           </div>
-          <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-right">
+          <div className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2 sm:w-auto sm:text-right">
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               Last 30 days
             </p>
@@ -61,10 +71,18 @@ export function IncomeExpenseChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[250px] w-full sm:h-[300px]">
+      <CardContent className="px-2 pb-4 sm:px-6">
+        <div className="h-[220px] w-full sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart
+              data={displayData}
+              margin={{
+                top: 8,
+                right: isMobile ? 4 : 12,
+                left: isMobile ? -8 : 0,
+                bottom: 0,
+              }}
+            >
               <defs>
                 <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.45} />
@@ -74,25 +92,33 @@ export function IncomeExpenseChart({
               <CartesianGrid strokeDasharray="6 6" className="stroke-border/70" />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11 }}
-                minTickGap={24}
-                tickMargin={8}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
+                minTickGap={isMobile ? 8 : 24}
+                tickMargin={6}
+                interval={isMobile ? "preserveStartEnd" : 0}
               />
               <YAxis
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
                 tickFormatter={(v) => {
-                  const abs = Math.abs(Number(v));
-                  if (abs >= 1000) return `${Number(v) / 1000}K`;
-                  return `${Number(v).toFixed(0)}`;
+                  const n = Number(v);
+                  const abs = Math.abs(n);
+                  if (abs >= 1000) {
+                    return `${(n / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+                  }
+                  return `${n.toFixed(0)}`;
                 }}
-                width={52}
+                width={isMobile ? 40 : 52}
               />
               <Tooltip
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.date ?? ""}
+                labelFormatter={(_, payload) => {
+                  const point = payload?.[0]?.payload as ChartPoint | undefined;
+                  return point?.date ?? "";
+                }}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "1px solid var(--border)",
                   background: "var(--card)",
+                  fontSize: isMobile ? "12px" : "14px",
                 }}
                 formatter={(value) => formatCurrency(Number(value ?? 0))}
               />
@@ -102,10 +128,10 @@ export function IncomeExpenseChart({
                 dataKey="balance"
                 name="Balance"
                 stroke="var(--chart-1)"
-                strokeWidth={3}
+                strokeWidth={isMobile ? 2.5 : 3}
                 fill="url(#balanceFill)"
                 dot={false}
-                activeDot={{ r: 5, strokeWidth: 2 }}
+                activeDot={{ r: isMobile ? 4 : 5, strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
