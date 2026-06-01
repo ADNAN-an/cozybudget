@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:hash-password": "node scripts/hash-password.mjs"
+    "db:hash-password": "node scripts/hash-password.mjs",
+    "db:verify-login-env": "node scripts/verify-login-env.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

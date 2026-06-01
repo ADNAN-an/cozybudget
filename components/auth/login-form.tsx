@@ -29,7 +29,11 @@ export function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      const message =
+        result.error === "Configuration"
+          ? "Server auth is misconfigured. Check AUTH_SECRET and AUTH_USER_PASSWORD_HASH_B64 on Vercel, then redeploy."
+          : "Invalid email or password";
+      setError(message);
       return;
     }
 

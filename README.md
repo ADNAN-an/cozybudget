@@ -50,11 +50,11 @@ A personal budget tracker with dashboard, income, expenses, savings goals, and d
 
 1. Push the repo to GitHub and import in Vercel.
 2. Add **Vercel Postgres** (Storage → Create → Postgres). Link `DATABASE_URL` to the project.
-3. Set environment variables:
-   - `DATABASE_URL` (often auto-set)
+3. Set environment variables (same values as local `.env`):
+   - `DATABASE_URL` (often auto-set by Vercel Postgres)
    - `AUTH_SECRET`
    - `AUTH_USER_EMAIL`
-   - `AUTH_USER_PASSWORD_HASH`
+   - `AUTH_USER_PASSWORD_HASH_B64` — **required** (do not use plain `AUTH_USER_PASSWORD_HASH` on Vercel; `$` in bcrypt hashes gets corrupted)
 4. Set **Build Command** (optional, default works if `postinstall` runs generate):
 
    ```bash
@@ -62,6 +62,29 @@ A personal budget tracker with dashboard, income, expenses, savings goals, and d
    ```
 
 5. Deploy and visit `/login`.
+
+### Login works locally but not on Vercel
+
+A `User` row in the hosted database **does not** mean Vercel login succeeded. If your local `.env` uses the same `DATABASE_URL`, signing in on **localhost** creates that user in the hosted DB.
+
+On Vercel, set **all** of these for **Production** (not Preview only), then **Redeploy**:
+
+| Variable | Notes |
+|----------|--------|
+| `AUTH_USER_EMAIL` | Same email you type on `/login` |
+| `AUTH_USER_PASSWORD_HASH_B64` | From `npm run db:hash-password` — paste the value only, no extra quotes |
+| `AUTH_SECRET` | Required to create the session after password check |
+| `DATABASE_URL` | Hosted Postgres URL |
+
+If password checks pass but `AUTH_SECRET` is missing, Auth.js returns **Configuration** (the login form now shows a specific message for this).
+
+Check **Vercel → Deployments → Functions / Runtime Logs** while signing in. Look for `Auth env incomplete`, `Auth password mismatch`, or `Auth email mismatch`.
+
+Verify your local hash locally:
+
+```bash
+npm run db:verify-login-env -- YourPassword
+```
 
 ## Features
 
@@ -80,3 +103,4 @@ A personal budget tracker with dashboard, income, expenses, savings goals, and d
 | `npm run db:migrate` | Create/apply dev migrations |
 | `npm run db:deploy` | Apply migrations (production) |
 | `npm run db:hash-password` | Generate bcrypt hash for `.env` |
+| `npm run db:verify-login-env` | Test email/password hash from `.env` |

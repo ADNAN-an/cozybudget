@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { authConfig } from "@/auth.config";
-import { getAuthPasswordHash } from "@/lib/auth-env";
+import { getAuthPasswordHash, getAuthEnvStatus } from "@/lib/auth-env";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -20,26 +20,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!email || !password) return null;
 
-        const envEmail = process.env.AUTH_USER_EMAIL;
+        const envEmail = process.env.AUTH_USER_EMAIL?.trim().toLowerCase();
         const envHash = getAuthPasswordHash();
+        const envStatus = getAuthEnvStatus();
 
         if (!envEmail || !envHash) {
-          console.error("AUTH_USER_EMAIL or AUTH_USER_PASSWORD_HASH not set");
+          console.error("Auth env incomplete:", envStatus);
           return null;
         }
 
-        if (email.toLowerCase() !== envEmail.toLowerCase()) return null;
+        if (email.toLowerCase() !== envEmail) {
+          console.error("Auth email mismatch for login attempt");
+          return null;
+        }
 
         const valid = await bcrypt.compare(password, envHash);
-        if (!valid) return null;
+        if (!valid) {
+          console.error("Auth password mismatch for login attempt");
+          return null;
+        }
 
         let user = await prisma.user.findUnique({
-          where: { email: envEmail.toLowerCase() },
+          where: { email: envEmail },
         });
 
         if (!user) {
           user = await prisma.user.create({
-            data: { email: envEmail.toLowerCase() },
+            data: { email: envEmail },
           });
         }
 
